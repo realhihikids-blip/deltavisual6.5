@@ -5,11 +5,23 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  PROJECT_DIR: delta-visuals-0_7_0-root
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: delta-visuals-0_7_0-root
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check project folder
+        run: |
+          pwd
+          ls -la
+          test -f build.gradle && test -f settings.gradle
 
       - uses: actions/setup-java@v4
         with:
@@ -19,10 +31,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.2.0"
+          build-root-directory: delta-visuals-0_7_0-root
 
-      # gradle-wrapper.jar is a binary file. If it is not in the repository yet, create it here.
+      # gradlew in this project is a minimal launcher: it needs gradle-wrapper.jar, which is not committed.
       - name: Create Gradle wrapper if missing
-        if: ${{ hashFiles('gradle/wrapper/gradle-wrapper.jar') == '' }}
+        if: ${{ hashFiles('delta-visuals-0_7_0-root/gradle/wrapper/gradle-wrapper.jar') == '' }}
         run: gradle wrapper --gradle-version 9.2.0
 
       - name: Make gradlew executable
@@ -31,12 +44,15 @@ jobs:
       - name: Build
         run: ./gradlew build --stacktrace
 
+      - name: List result
+        run: ls -l build/libs
+
       - name: Upload mod jar
         uses: actions/upload-artifact@v4
         with:
           name: delta-visuals-jar
           path: |
-            build/libs/*.jar
-            !build/libs/*-sources.jar
-            !build/libs/*-dev.jar
+            delta-visuals-0_7_0-root/build/libs/*.jar
+            !delta-visuals-0_7_0-root/build/libs/*-sources.jar
+            !delta-visuals-0_7_0-root/build/libs/*-dev.jar
           if-no-files-found: error
